@@ -31,15 +31,14 @@
         imagePosition: "left",
         showSelectedHTML: true,
         clickOffToClose: true,
-		embedCSS: true,
         onSelected: function () { }
     },
 
     ddSelectHtml = '<div class="dd-select"><input class="dd-selected-value" type="hidden" /><a class="dd-selected"></a><span class="dd-pointer dd-pointer-down"></span></div>',
-    ddOptionsHtml = '<ul class="dd-options"></ul>',
+    ddOptionsHtml = '<ul class="dd-options"></ul>';
 
     //CSS for ddSlick
-    ddslickCSS = '<style id="css-ddslick" type="text/css">' +
+    /*ddslickCSS ='<style id="css-ddslick" type="text/css">' +
                 '.dd-select{ border-radius:2px; border:solid 1px #ccc; position:relative; cursor:pointer;}' +
                 '.dd-desc { color:#aaa; display:block; overflow: hidden; font-weight:normal; line-height: 1.4em; }' +
                 '.dd-selected{ overflow:hidden; display:block; padding:10px; font-weight:bold;}' +
@@ -56,23 +55,18 @@
                 '.dd-image-right { float:right; margin-right:15px; margin-left:5px;}' +
                 '.dd-container{ position:relative;}​ .dd-selected-text { font-weight:bold}​</style>';
 
+    //CSS styles are only added once.
+    if ($('#css-ddslick').length <= 0) {
+        $(ddslickCSS).appendTo('head');
+    }
+    */
     //Public methods 
     methods.init = function (options) {
         //Preserve the original defaults by passing an empty object as the target
-        //The object is used to get global flags like embedCSS.
         var options = $.extend({}, defaults, options);
-        
-        //CSS styles are only added once.
-	    if ($('#css-ddslick').length <= 0 && options.embedCSS) {
-	        $(ddslickCSS).appendTo('head');
-	    }
 
         //Apply on all selected elements
         return this.each(function () {
-            //Preserve the original defaults by passing an empty object as the target 
-            //The object is used to save drop-down's corresponding settings and data.
-            var options = $.extend({}, defaults, options);
-            
             var obj = $(this),
                 data = obj.data('ddslick');
             //If the plugin has not been initialized yet
@@ -105,16 +99,13 @@
                 //Add classes and append ddSelectHtml & ddOptionsHtml to the container
                 obj.addClass('dd-container').append(ddSelectHtml).append(ddOptionsHtml);
 
-                // Inherit name attribute from original element
-                obj.find("input.dd-selected-value").attr("name", $(original).attr("name"))
-
                 //Get newly created ddOptions and ddSelect to manipulate
                 var ddSelect = obj.find('.dd-select'),
                     ddOptions = obj.find('.dd-options');
 
                 //Set widths
                 ddOptions.css({ width: options.width });
-                ddSelect.css({ width: options.width, background: options.background });
+                ddSelect.css({ width: options.width });
                 obj.css({ width: options.width });
 
                 //Set height
@@ -128,6 +119,7 @@
                         '<a class="dd-option">' +
                             (item.value ? ' <input class="dd-option-value" type="hidden" value="' + item.value + '" />' : '') +
                             (item.imageSrc ? ' <img class="dd-option-image' + (options.imagePosition == "right" ? ' dd-image-right' : '') + '" src="' + item.imageSrc + '" />' : '') +
+                            (item.iconClass ? ' <span class="dd-option-span ' + item.iconClass + '" ></span>' : '') +
                             (item.text ? ' <label class="dd-option-text">' + item.text + '</label>' : '') +
                             (item.description ? ' <small class="dd-option-description dd-desc">' + item.description + '</small>' : '') +
                         '</a>' +
@@ -181,10 +173,19 @@
     //Public method to select an option by its index
     methods.select = function (options) {
         return this.each(function () {
-            if (options.index!==undefined)
-                selectIndex($(this), options.index);
-            if (options.id)
-                selectId($(this), options.id);
+            var $this = $(this),
+                pluginData = $this.data('ddslick');
+
+            if (pluginData) {
+                if (options.value) {
+                    $.each(pluginData.settings.data, function (k, v) {
+                        if (v.value == options.value)
+                            selectIndex($this, k);
+                    });
+                }
+                if (options.index)
+                    selectIndex($(this), options.index);
+            }
         });
     }
 
@@ -224,14 +225,6 @@
                 $this.removeData('ddslick').unbind('.ddslick').replaceWith(originalElement);
             }
         });
-    }
-    
-     //Private: Select id
-    function selectId(obj, id) {
-    
-       var index = obj.find(".dd-option-value[value= '" + id + "']").parents("li").prevAll().length;
-       selectIndex(obj, index);
-       
     }
 
     //Private: Select index
